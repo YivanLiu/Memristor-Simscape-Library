@@ -1,0 +1,44 @@
+component KNOWM_memristor < foundation.electrical.branch
+% KNOWM_memristor
+% https://knowm.org/the-mean-metastable-switch-memristor-model-in-xyce/
+
+    annotations
+    Icon = 'memristor.svg';
+    end
+
+    parameters
+        Ron = {500, 'Ohm'};        % Resistance of state A
+        Roff = {1500, 'Ohm'};      % Resistance of state B
+        Von = {0.27, 'V'};
+        Voff = {0.27, 'V'};       
+        TAU = {0.0001, 's'};
+        T = {298, 'K'};
+        x0 = {0, '1'};          % State A fraction at t=0
+    end
+
+    parameters(Access=private)
+        boltz = {1.380649e-23, 'J/K'};
+        echarge = {1.602176634e-19, 'C'};
+    end
+    
+    variables(Access=private)
+        XSV = {value = x0, priority = priority.high}; % Memristor fraction in state A
+        power_dissipated = {0, 'W'};                 % Power dissipated
+    end
+    
+    equations
+        assert(Ron>0)
+        assert(Roff>0)
+        assert(Von>0)
+        assert(Voff>0)
+        assert(TAU>0)
+        assert(T>0)
+
+        XSV.der == (1/TAU)*((1/(1+exp(-1/(T*boltz/echarge)*(v-Von))))*(1-XSV)-(1-(1/(1+exp(-1/(T*boltz/echarge)*(v+Voff)))))*XSV);
+        i == v*(XSV/Ron+(1-XSV)/Roff);
+
+        power_dissipated == i*v;
+            
+    end
+
+end

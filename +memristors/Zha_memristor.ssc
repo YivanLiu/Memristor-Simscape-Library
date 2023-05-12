@@ -1,0 +1,45 @@
+component Zha_memristor<foundation.electrical.branch
+%--- Define icon ---
+    annotations
+    Icon = 'memristor.svg';
+    end
+%--- Define parameters ---
+    parameters
+        u_v = {1e-14,'m^2/s/V'}; % Mobility (uv)
+        w0 = {0,'m'}; % Initial w (w0)
+        D = {10e-9, 'm'}; % Memristor Width (D)
+        Ron = {100,'Ohm'}; % Min Resistance (Ron)
+        Roff = {16e3, 'Ohm'}; % Max Resistance (Roff)
+        P = {10, '1'}; % Exponent of window function
+        j = {1, '1'}; % Scaling parameter
+    end
+%--- Define intrinsical variables ---
+    variables
+        w = {1, 'm'};
+        M = {1e3, 'Ohm'};
+    end
+%--- Setup initial state of w ---
+    function setup
+        w=w0;
+    end
+%--- Behavioral model ---
+    equations
+        let
+            az = u_v*Ron / D;
+        in
+            if (w <= 0 && v <= 0) || (w >= D && v >= 0)
+                w.der == 0;
+            else
+                if (v > 0)
+                    w.der == ...
+                    az*i*j*(1-(0.25*(w/D)^2+0.75)^P);
+                else
+                    w.der == ...
+                    az*i*j*(1-(0.25*(w/D-1)^2+0.75)^P);
+                end
+            end
+        end
+        M == Ron*(w/D) + Roff*(1 - w/D);
+        v == i*M;
+    end
+end

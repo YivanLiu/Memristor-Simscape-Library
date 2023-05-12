@@ -1,0 +1,43 @@
+component Strukov_memristor_for_testing<foundation.electrical.branch
+
+    annotations
+    Icon = 'memristor.svg';
+    end
+
+    outputs
+        w_out = {0, 'm'}; % w:left
+    end
+
+    parameters
+        u_v = { 1e-14,'m^2/s/V' };   % Mobility (uv)
+        w0 = { 0,'m' }; % Initial w (w0)
+        D = { 10e-9, 'm' };  % Memristor Width (D)
+        Ron = {100,'Ohm'}; % Minimum Resistance (Ron)
+        Roff = {16e3, 'Ohm'}; % Maximum Resistance (Roff)
+    end
+
+    variables
+        w={1, 'm'};
+        M={1e3, 'Ohm'};
+    end
+
+    function setup
+        w=w0;
+    end
+
+    equations
+        let
+            az = u_v*Ron / D;
+            Fp = w*(D-w)/(D^2);
+        in
+            if(w <= 0 && v <= 0)||(w >= D && v >= 0)
+                w.der == 0;
+            else
+               w.der == az*i*Fp;
+            end % if
+        end
+        M == Ron*(w/D) + Roff*(1 - w/D);
+        v == i*M;
+        w_out == w;
+    end % equations
+end % component

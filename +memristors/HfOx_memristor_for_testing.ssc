@@ -1,0 +1,78 @@
+component HfOx_memristor_for_testing<foundation.electrical.branch
+% HfOx-based Memristor for testing
+% P. -Y. Chen and S. Yu, "Compact Modeling of RRAM Devices and Its Applications in 1T1R and 1S1R Array Design," in IEEE Transactions on Electron Devices, vol. 62, no. 12, pp. 4022-4028, Dec. 2015, doi: 10.1109/TED.2015.2492421.
+    
+    nodes
+        H = foundation.thermal.thermal; % H:left
+    end
+
+    annotations
+        Icon = 'memristor.svg';
+    end
+
+    outputs
+        gap_out = {0, 'm'}; % gap:left
+        M_out = {0, 'Ohm'}; % M:right
+    end
+
+    parameters(Access=private)
+        %Constant
+        kb = {1.3806503e-23, 'J/K'};    %Boltzmann's constant
+        q = {1.6e-19, 'C'}              %Electron charge
+        Vread = {0.1, 'V'}              %Read voltage
+    end
+
+    parameters
+        %Device parameters
+        L = {5e-9, 'm'};                % L: Oxide thickness
+        gap_min = {0.1e-9, 'm'};        % gap_min: Minimum gap distance
+        gap_max = {1.7e-9, 'm'};        % gap_max: Maximum gap distance
+        gap_ini = {1.7e-9, 'm'};        % gap_ini: Initial gap distance
+        a0 = {0.25e-9, 'm'};            % a0: Atomic hopping distance
+        Eag = {1.501, 'J'};             % Eag: Activation energy for vacancy generation
+        Ear = {1.5, 'J'};               % Ear: Activation energy for vacancy recombination
+        %I-V characteristics
+        I0 = {6.14e-5, 'A'};            % I0: I-V fitting parameter
+        g0 = {2.7505e-10, 'm'};         % g0: I-V fitting parameter
+        V0 = {0.43, 'V'};               % V0: I-V fitting parameter
+        %Gap dynamics
+        Vel0 = {150, 'm/s'};            % v0: Gap dynamics fitting parameter
+        gamma0 = {16.5, '1'};           % γ0: Gap dynamics fitting parameter
+        g1 = {1e-9, 'm'};               % g1: Gap dynamics fitting parameter
+        beta = {1.25, '1'};             % β: Gap dynamics fitting parameter
+        %Temperature dynamics
+        T0 = {298,'K'};                 % T0: Ambient temperature
+        Cth = {3.1825e-16, 'J/K'};      % Cth: Effective thermal capacitance
+        Tau_th = {2.3e-10, 's'};        % τth: Effective thermal time constant
+    end
+
+    variables
+        gap = {1.7e-9, 'm'};
+        temperature = {298,'K'};
+    end
+
+    function setup
+        gap = gap_ini;
+        temperature = T0;
+    end
+
+    equations
+        let
+            gamma = gamma0 - beta*(gap/g1)^3;
+            
+        in
+            temperature.der+(temperature-T0)/Tau_th == abs(v*i)/Cth
+            if(gap <= gap_min && v >= 0)||(gap >= gap_max && v <= 0)
+                gap.der == 0;
+            else
+                gap.der == -Vel0*( exp(-1.6e-19*Eag/kb/temperature)*exp(gamma*a0/L*q*v/kb/temperature) - exp(-1.6e-19*Ear/kb/temperature)*exp(-gamma*a0/L*q*v/kb/temperature) );
+            end
+        end
+            i == I0*exp(-gap/g0)*sinh(v/V0);
+            gap_out == gap;
+            M_out == Vread/(I0*exp(-gap/g0)*sinh(Vread/V0));
+
+            temperature == H.T;
+    end
+
+end

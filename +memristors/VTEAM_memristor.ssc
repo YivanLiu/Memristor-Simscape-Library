@@ -1,0 +1,54 @@
+component VTEAM_memristor<foundation.electrical.branch
+    
+    annotations
+        Icon = 'memristor.svg';
+    end
+
+    outputs
+        w_out = {0, 'm'}; % w:left
+    end
+
+    parameters
+        alpha_on = {3, '1'};
+        alpha_off = {3, '1'};
+        v_on = {-0.15, 'V'};
+        v_off = {0.16, 'V'};
+        R_on = {387, 'Ohm'};
+        R_off = {1069.5, 'Ohm'};
+        k_on = {-2.2e-4, 'm/s'};
+        k_off = {2.49e-6, 'm/s'};
+        w_on = {0, 'm'};
+        w_off = {10e-9, 'm'};
+        w0 = {8.9e-9, 'm'};
+    end
+
+    variables
+        w = {0, 'm'};
+        F = {1, '1'};
+    end
+
+    function setup
+        w = w0;
+    end
+    
+    equations % Window Function
+        if(w > w_off && v >= 0)||(w < w_on && v <= 0)
+            F == 0;
+        else
+            F == 1;
+        end
+    end
+
+    equations
+        if(v > v_off)
+            w.der == k_off*(((v/v_off)-1)^alpha_off)*F
+        elseif(v < v_on)
+            w.der == k_on*(((v/v_on)-1)^alpha_on)*F
+        else
+            w.der == 0;
+        end
+        v == (R_on+((R_off-R_on)/(w_off-w_on))*(w-w_on))*i;
+        w_out == w;
+    end
+    
+end % component
